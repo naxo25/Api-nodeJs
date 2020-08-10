@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title> VueJs NodeJs MySql </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+</head>
+<body>
+    <div id="app" class="container">
+      <div style="height:460px; overflow: scroll; overflow-x: hidden;">
+        <section class="data">
+          <div class="row">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Titulo</th>
+                        <th>Url</th>
+                        <th>Id</th>
+                        <th>Opciones</th>
+                    </tr>
+                </thead>
+                <tbody v-for="(tarea, index) in tareas" :key='tarea.id'>
+                    <tr>
+                        <td width="35%">
+                            <span v-if="formActualizar && idActualizar == index">
+                                <input v-model="formDataActualizar.title" type="text" required>
+                            </span>
+                            <span v-else>
+                                {{ tarea.title }}
+                            </span>
+                        </td>
+                        <td width="35%">
+                            <span v-if="formActualizar && idActualizar == index">
+                                <input v-model="formDataActualizar.url" type="url" required>
+                            </span>
+                            <span v-else>
+                                <a :href="tarea.url" target="_blank">
+                                {{ tarea.url }} </a>
+                            </span>
+                        </td>
+                        <td width="35%">
+                                {{ tarea.id }}
+                        </td>
+
+                        <td>
+                            <span v-if="formActualizar && idActualizar == index">
+                                <a @click="editar(tarea, index)" class="waves-effect waves-light btn-small">
+                                Guardar</a>
+                                <a @click="ocultarActualizar" class="waves-light waves-effect btn-small">Cancelar</a>
+                            </span>
+                            <span v-else>
+                                <a @click="verFormActualizar(index)" class="waves-effect waves-light btn-small">
+                                Actualizar</a>
+
+                                <a @click="borrar(tarea, index)" class="waves-effect waves-light btn-small">Borrar</a>
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+        <section class="form">
+            <form>
+              <div class="input-field col s6">
+                <i class="material-icons prefix">edit</i>
+                <label for="icon_prefix" class="active">Titulo</label>
+                <input v-model="formData.title" id="icon_prefix" type="text" class="validate valid">
+              </div>
+              <div class="input-field col s6">
+                <i class="material-icons prefix">date_range</i>
+                <input v-model="formData.url" id="icon_prefix" type="url" class="validate valid">
+                <label for="icon_prefix" class="active">url</label>
+              </div>
+              
+              <a @click="save" class="waves-effect waves-light btn-small">Añadir</a>
+            </form>
+        </section>
+
+        <form action="/" method="POST" enctype='multipart/form-data'>
+        	<input hidden id='subir' type="file" @change="changeFoto" accept="image/*" name="image" />
+		</form>
+
+    </div> <!-- div app -->
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script>        
+        
+    new Vue({
+        el: '#app',
+        data: {
+        	id: '',
+        	idFoto: '',
+            formDataActualizar: {
+              title: '',
+              url: ''
+            },
+            formData: {
+              title: '',
+              url: ''
+            },
+            tarea_id: '',
+            formActualizar: false,
+            idActualizar: -1,
+            tareaActualizar: '',
+            fechaActualizar: '',
+            tareas: {},
+            noimg: 'https://i.blogs.es/99f0c0/vue/450_1000.png',
+            urlFoto: "http://localhost/rutaApi/change_photo.php",
+            url: "http://localhost:4000/backendnode/"
+        },
+        created: function(){
+        	this.listar();
+        },
+        methods: {
+                listar (){
+                    axios.get(this.url).then(response => {
+                       this.tareas = response.data.nodejs;
+                    }) 
+                },
+                save (){
+                    axios.post(this.url, this.formData).then(response =>{
+                        this.tareas.push(response.data);
+                        this.formData.title = '';
+                        this.formData.url = '';
+                    }); 
+                },
+                editar:function(tarea, index){
+                    axios.put(this.url + tarea.id, this.formDataActualizar).then(response =>{
+                        this.tareas[index] = response.data;
+                        this.ocultarActualizar()
+                    }); 
+                },
+                borrar:function(tarea, index){
+                    var r = confirm("¿Está seguro de borrar el registro ?");
+                    if (r == true) { 
+                        axios.delete(this.url + tarea.id).then(response =>{ 
+                            this.tareas.splice(index, 1);
+                        });
+                    }
+                },
+              opFoto(){
+                  let subir = document.getElementById('subir');
+                  subir.click();
+              },
+              changeFoto(e){
+                  let foto = e.target.files[0],
+                      index = this.id,
+                      id = this.idFoto;
+                  var reader = new FileReader();   
+                  reader.onload = function(evt){
+                      let foto = document.getElementById(index);
+                      foto.src = evt.target.result;
+                      let formData = new FormData();
+                      formData.append('fichero', evt.target.result);
+                      formData.append('name',id);   
+                      console.log(formData.name)
+                      console.log(formData.fichero)
+                      axios.post("http://localhost:3000/imagen/upload", evt).then(response => {
+                      		console.log(response)
+                      });
+                  };
+
+                  reader.readAsDataURL(foto);
+              },    
+
+                    verFormActualizar (tarea_id) {
+                        this.idActualizar = tarea_id;
+                        this.formDataActualizar = this.tareas[tarea_id];
+                        this.formActualizar = true;
+                    },
+                    ocultarActualizar () {
+                        this.formActualizar = false;
+                    }
+
+            }
+    });  
+
+       
+</script>
+
+</body>
+</html>
