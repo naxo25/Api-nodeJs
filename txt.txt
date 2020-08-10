@@ -1,7 +1,0 @@
-importe api.sql
-inicie localhost con mysql
-
-nodemon src/app.js o npm run dev
-servidor nodejs se inicia en puerto 4000
-
-en frontends se encuentran proyectos en vuejs, react, quasar(framework de vue) y pwa, con quasar puedo hacer el crud como app móvil como aquí
